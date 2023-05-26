@@ -1,0 +1,40 @@
+version: "3.7"
+
+services:
+  rasa-bot:
+    image: rasa-image
+    build:
+      context: .
+      dockerfile: docker/rasa.Dockerfile
+    ports:
+      - 5005:5005
+    volumes:
+      - ./amadeus_bot:/home/app-user
+    env_file:
+      - .env
+    depends_on:
+      - mongo
+    command: rasa run --log-file storage/logs/rasa-api.log
+
+  rasa-actions:
+    image: rasa-image
+    volumes:
+      - ./amadeus_bot:/home/app-user
+    ports:
+      - 5055:5055
+    env_file:
+      - .env
+    depends_on:
+      - rasa-bot
+    command: bash -c 'rasa run actions -v >> storage/logs/rasa-actions.log'
+
+  mongo:
+    image: mongo:4.4.13-focal
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - 27000:27017
+
+volumes:
+  mongodb_data:
+    driver: local

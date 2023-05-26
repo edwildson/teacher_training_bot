@@ -1,0 +1,16 @@
+__pycache__/
+
+amadeus_bot/.rasa/
+amadeus_bot/.config/
+amadeus_bot/.keras/
+amadeus_bot/models/*
+amadeus_bot/results/*
+
+amadeus_bot/storage/logs/*
+
+!amadeus_bot/models/.gitkeep
+!amadeus_bot/storage/logs/.gitkeep
+
+.env
+
+.idea/
