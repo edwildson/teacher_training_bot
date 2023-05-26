@@ -8,10 +8,25 @@ intents:
   - mood_great
   - mood_unhappy
   - bot_challenge
+  - utter_email
+  - inform
+  - unconfirm_email
+
+actions:
+  - action_get_email
+  - action_save_email
+  - confirm_email
+
+slots:
+  email:
+    type: text
+    influence_conversation: false
+    mappings:
+    - type: custom
 
 responses:
   utter_greet:
-  - text: "Hey! How are you?"
+  - text: "Olá, seja bem-vindo ao treinamento do Amadeus LMS"
 
   utter_cheer_up:
   - text: "Here is something to cheer you up:"
@@ -28,6 +43,12 @@ responses:
 
   utter_iamabot:
   - text: "I am a bot, powered by Rasa."
+
+  utter_pergunta:
+  - text: "Qual é o seu email?"
+
+  utter_email:
+  - text: "O seu email é {email}."
 
 session_config:
   session_expiration_time: 60

@@ -16,11 +16,18 @@ nlu:
     - goodmorning
     - goodevening
     - good afternoon
-    - oi
+    - ei
     - olá
-    - eae
-    - e aí
-    - e ai
+    - oi
+    - iai
+    - bom dia
+    - boa noite
+    - opa
+    - vamos lá
+    - ei cara
+    - bom dia
+    - boa noite
+    - boa tarde
 
 - intent: goodbye
   examples: |
@@ -34,9 +41,6 @@ nlu:
     - see you around
     - bye bye
     - see you later
-    - flw
-    - tchau
-    - valeu falou
 
 - intent: affirm
   examples: |
@@ -46,10 +50,11 @@ nlu:
     - of course
     - that sounds good
     - correct
-    - s
     - sim
+    - s
     - aham
-    - yep
+    - certo
+    - acho que sim
 
 - intent: deny
   examples: |
@@ -61,8 +66,11 @@ nlu:
     - no way
     - not really
     - não
-    - n
     - nops
+    - negativo
+    - jamais
+    - acho que não
+
 
 - intent: mood_great
   examples: |
@@ -105,10 +113,17 @@ nlu:
     - am I talking to a bot?
     - am I talking to a human?
 
-- intent: inform
+- intent: confirm_email
   examples: |
-    - o meu email é test@example.com
-    - meu endereço de email é test@example.com
-    - o email para contato é test@example.com
-    - test@example.com
-    - por favor, use o endereço de email test@example.com 
+    - sim
+    - correto
+    - sim, este é meu email
+    - este é meu email
+
+- intent: unconfirm_email
+  examples: |
+    - não
+    - errado
+    - não, este não é meu email
+    - este não é meu email
+    

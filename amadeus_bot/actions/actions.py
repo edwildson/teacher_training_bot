@@ -1,35 +1,8 @@
-# This files contains your custom actions which can be used to run
-# custom Python code.
-#
-# See this guide on how to implement these action:
-# https://rasa.com/docs/rasa/custom-actions
-
-
-# This is a simple example for a custom action which utters "Hello World!"
-
-# from typing import Any, Text, Dict, List
-#
-# from rasa_sdk import Action, Tracker
-# from rasa_sdk.executor import CollectingDispatcher
-#
-#
-# class ActionHelloWorld(Action):
-#
-#     def name(self) -> Text:
-#         return "action_hello_world"
-#
-#     def run(self, dispatcher: CollectingDispatcher,
-#             tracker: Tracker,
-#             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
-#
-#         dispatcher.utter_message(text="Hello World!")
-#
-#         return []
-
 from typing import Dict, Text, Any, List, Union
 from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.events import SlotSet, AllSlotsReset
+import logging
 
 from pymongo import MongoClient
 
@@ -44,7 +17,7 @@ class ActionGetEmail(Action):
     def run(self, dispatcher: CollectingDispatcher,
             tracker: Tracker,
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
-
+        logging.info("informe seu email")
         dispatcher.utter_message(text="Por favor, informe seu e-mail.")
 
         return [SlotSet("email", None)]
@@ -57,8 +30,7 @@ class ActionSaveEmail(Action):
     def run(
         self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]
     ) -> List[Dict[Text, Any]]:
-        message = tracker.latest_message.get('text')
-        email = re.findall('\S+@\S+', message)[0]
+        email = tracker.get_slot("email")
 
         print("Criando conexão")
         # Crie uma conexão com o servidor MongoDB
@@ -84,5 +56,27 @@ class ActionSaveEmail(Action):
             upsert=True # Insere um novo documento se não encontrar nenhum documento correspondente
         )
         
-        dispatcher.utter_message(text=f"O email é: {email}") # Extrai o email usando expressão regular
-        return [SlotSet("email", email)]
+        return None
+
+class ConfirmEmailAction(Action):
+    def name(self):
+        return "confirm_email"
+
+    def run(self, dispatcher, tracker, domain):
+        logging.info("Confirmando email")
+        message = tracker.latest_message.get('text')
+        email = re.findall(r'\S+@\S+', message)[0]
+
+        buttons = [
+            {"title": "Sim", "payload": "/acao1"},
+            {"title": "Não", "payload": "/acao2"},
+        ]
+
+        message = {
+            "text": f'O seu email é {email}?',
+            "buttons": buttons
+        }
+
+        dispatcher.utter_message(text=message["text"], buttons=message["buttons"])
+
+        return [SlotSet("email", email)]  # Atualize os slots se necessário
