@@ -11,3 +11,20 @@ rules:
   steps:
   - intent: bot_challenge
   - action: utter_iamabot
+
+- rule: Confirma email
+  steps:
+    - intent: confirm_email
+    - action: action_check_email
+    - action: action_start_training
+
+- rule: Desconfirma email
+  steps:
+    - intent: unconfirm_email
+    - action: action_get_email
+
+- rule: Iniciar treinamento
+  steps:
+    - intent: training
+    - action: action_training
+

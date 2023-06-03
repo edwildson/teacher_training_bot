@@ -7,8 +7,12 @@ stories:
   - intent: greet
   - action: utter_greet
   - action: action_get_email
-  - intent: inform
+  - intent: inform_email
     entities:
     - email: "test@example.com"
-  - action: confirm_email
-  - action: action_save_email
+  - action: action_email_confirmation
+  
+- story: training
+  steps:
+  - intent: training
+  - action: action_training

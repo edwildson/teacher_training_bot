@@ -10,15 +10,31 @@ intents:
   - bot_challenge
   - utter_email
   - inform
+  - confirm_email
   - unconfirm_email
+  - training
+  - inform_email
 
 actions:
   - action_get_email
   - action_save_email
-  - confirm_email
+  - action_email_confirmation
+  - action_check_email
+  - action_start_training
+  - action_training
 
 slots:
   email:
+    type: text
+    influence_conversation: false
+    mappings:
+    - type: custom
+  teacher_name:
+    type: text
+    influence_conversation: false
+    mappings:
+    - type: custom
+  teacher_id:
     type: text
     influence_conversation: false
     mappings:

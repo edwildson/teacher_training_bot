@@ -28,6 +28,7 @@ nlu:
     - bom dia
     - boa noite
     - boa tarde
+    - sair
 
 - intent: goodbye
   examples: |
@@ -115,15 +116,22 @@ nlu:
 
 - intent: confirm_email
   examples: |
-    - sim
-    - correto
-    - sim, este é meu email
     - este é meu email
+    - sim, este é meu email
 
 - intent: unconfirm_email
   examples: |
-    - não
-    - errado
-    - não, este não é meu email
     - este não é meu email
+    - não, este não é meu email
+
+- intent: training
+  examples: |
+    - continuar treinamento
+    - iniciar treinamento
+
+- intent: inform_email
+  examples: |
+    - Meu email é [johndoe@example.com](email)
+    - O email para contato é [foo@bar.com](email)
+    - [me@example.com](email)
     
