@@ -149,7 +149,7 @@ class ActionStartTraining(Action):
 
         logging.info(f"training: {training}")
         
-        if training.count_documents() == 1:
+        if training.count() == 1:
             dispatcher.utter_message(text=f"Bem vindo novamente ao treinamento")
             
             buttons = [
