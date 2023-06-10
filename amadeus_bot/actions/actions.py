@@ -227,14 +227,11 @@ class ActionTraining(Action):
                 challenge = teacher['challenge']
 
                 # Inicia treinamento a partir do último
-                logging.info(f"Beleza porra, pegou o desafio: ${challenge}")
-                dispatcher.utter_message(text=f"Beleza porra, pegou o desafio: ${challenge}")
+                logging.info(f"Beleza porra, pegou o desafio: {challenge}")
 
                 if challenge == 4:
                     dispatcher.utter_message(
-                        text=f"Você já finalizou o treinamento. Não se esqueça \
-                        de responder o formulário: http://goo.gl/docs/123. \
-                        "
+                        text=f"Você já finalizou o treinamento. Não se esqueça de responder o formulário: http://goo.gl/docs/123."
                     )
             else:
                 # Lida com a situação em que o objeto teacher é None ou não possui a propriedade "challenge"
