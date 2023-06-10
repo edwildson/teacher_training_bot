@@ -5,6 +5,7 @@ from rasa_sdk.events import SlotSet, AllSlotsReset
 import logging
 
 from pymongo import MongoClient
+from bson import ObjectId
 
 from datetime import datetime
 
@@ -148,7 +149,7 @@ class ActionStartTraining(Action):
 
         logging.info(f"training: {training}")
         
-        if training.count() == 1:
+        if training.count_documents() == 1:
             dispatcher.utter_message(text=f"Bem vindo novamente ao treinamento")
             
             buttons = [
@@ -163,8 +164,6 @@ class ActionStartTraining(Action):
 
             dispatcher.utter_message(text=message["text"], buttons=message["buttons"])
         else:
-            dispatcher.utter_message(text=f"Seja bem vindo ao treinamento")
-            
             buttons = [
                 {"title": "Sim", "payload": "continuar treinamento"},
                 {"title": "Não", "payload": "sair"},
@@ -217,18 +216,34 @@ class ActionTraining(Action):
       
         timestamp = datetime.utcnow()
 
-        teacher = collection.find_one({'_id': f'{teacher_id}'})
-        
-        challenge = teacher['challenge']
+        documento_id = ObjectId(teacher_id)
 
-        if result is not None:
-            challenge = next(result, None)  # Obtenha o próximo documento ou None
+        teacher = collection.find_one({'_id': documento_id})
+        
+        logging.info(teacher)
+
+        if teacher is not None:
             if teacher is not None and 'challenge' in teacher:
                 challenge = teacher['challenge']
-                # Restante do seu código que depende da variável "challenge"
+
+                # Inicia treinamento a partir do último
+                logging.info(f"Beleza porra, pegou o desafio: ${challenge}")
+                dispatcher.utter_message(text=f"Beleza porra, pegou o desafio: ${challenge}")
+
+                if challenge == 4:
+                    dispatcher.utter_message(
+                        text=f"Você já finalizou o treinamento. Não se esqueça \
+                        de responder o formulário: http://goo.gl/docs/123. \
+                        "
+                    )
             else:
                 # Lida com a situação em que o objeto teacher é None ou não possui a propriedade "challenge"
+                logging.info(f"Beleza porra, não tem desafio")
+                dispatcher.utter_message(text=f"Beleza porra, não tem desafio")
         else:
-            # Lida com a situação em que a consulta não retornou nenhum documento
-                
-                return []  # Atualize os slots se necessário
+            # Inicia treinamento do 0
+            logging.info(f"Aí deu ruim")
+            dispatcher.utter_message(text=f"Aí deu ruim")
+
+        
+        return []  # Atualize os slots se necessário
