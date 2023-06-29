@@ -42,6 +42,8 @@ nlu:
     - see you around
     - bye bye
     - see you later
+    - tchau
+    - até mais
 
 - intent: affirm
   examples: |
@@ -124,10 +126,14 @@ nlu:
     - este não é meu email
     - não, este não é meu email
 
-- intent: training
+- intent: before_training
   examples: |
     - continuar treinamento
     - iniciar treinamento
+
+- intent: training
+  examples: |
+    - iniciar desafios
 
 - intent: inform_email
   examples: |

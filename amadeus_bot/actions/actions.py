@@ -119,7 +119,7 @@ class ActionCheckEmail(Action):
             logging.info('encontrou')
             dispatcher.utter_message(text=f"Olá, {teacher['name']}")
             return [
-                SlotSet("teacher", teacher['name']),
+                SlotSet("teacher_name", teacher['name']),
                 SlotSet("teacher_id", str(teacher['_id'])),
             ]
         else:
@@ -195,11 +195,14 @@ class ActionStartTraining(Action):
         return []  # Atualize os slots se necessário
 
 
-class ActionTraining(Action):
+class ActionBeforeTraining(Action):
     def name(self):
-        return "action_training"
+        return "action_before_training"
 
-    def run(self, dispatcher, tracker, domain):
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+
         teacher_id = tracker.get_slot("teacher_id")
 
         logging.info(f"Capturando contexto de treinamento do professor ({teacher_id})")
@@ -223,20 +226,37 @@ class ActionTraining(Action):
         logging.info(teacher)
 
         if teacher is not None:
-            if teacher is not None and 'challenge' in teacher:
+            if 'done' in teacher:
                 challenge = teacher['challenge']
+                done = teacher['done']
 
-                # Inicia treinamento a partir do último
-                logging.info(f"Beleza porra, pegou o desafio: {challenge}")
+                if done is not None and done is True:
+                    # dispatcher.utter_message(
+                    #     text=f"Você já finalizou o treinamento. Não se esqueça de responder o formulário: http://goo.gl/docs/123."
+                    # )
+                    logging.info(f"Done, vaze!")
+                    return [SlotSet("done", True)]
+            elif 'last_quest_date' in teacher:
+                last_quest_date = teacher['last_quest_date']
 
-                if challenge == 4:
-                    dispatcher.utter_message(
-                        text=f"Você já finalizou o treinamento. Não se esqueça de responder o formulário: http://goo.gl/docs/123."
-                    )
-            else:
-                # Lida com a situação em que o objeto teacher é None ou não possui a propriedade "challenge"
-                logging.info(f"Beleza porra, não tem desafio")
-                dispatcher.utter_message(text=f"Beleza porra, não tem desafio")
+                if last_quest_date is True:
+                    return []
+                
+            buttons = [
+                {"title": "Sim", "payload": "iniciar desafios"},
+                {"title": "Não", "payload": "sair"},
+            ]
+
+            message = {
+                "text": f'Gostaria de iniciar os desafios agora?',
+                "buttons": buttons
+            }
+
+            dispatcher.utter_message(text=message["text"], buttons=message["buttons"])
+               
+            # Lida com a situação em que o objeto teacher é None ou não possui a propriedade "challenge"
+            # logging.info(f"Beleza porra, não tem desafio")
+            # dispatcher.utter_message(text=f"Beleza porra, não tem desafio")
         else:
             # Inicia treinamento do 0
             logging.info(f"Aí deu ruim")
@@ -244,3 +264,80 @@ class ActionTraining(Action):
 
         
         return []  # Atualize os slots se necessário
+
+class ActionTraining(Action):
+    def name(self):
+        return "action_training"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+
+        teacher_id = tracker.get_slot("teacher_id")
+
+        # logging.info(f"Capturando contexto de treinamento do professor ({teacher_id})")
+
+
+        # Crie uma conexão com o servidor MongoDB
+        client = MongoClient("mongodb://mongo")
+        
+        # Selecione um banco de dados
+        db = client['amadeus_bot']
+       
+        # Selecione uma coleção
+        collection = db['teachers']
+      
+        timestamp = datetime.utcnow()
+
+        documento_id = ObjectId(teacher_id)
+
+        teacher = collection.find_one({'_id': documento_id})
+        
+        logging.info(teacher)
+
+        if teacher is not None:
+            # Selecione uma coleção
+            collection = db['challenges']
+
+            documento_id = ObjectId(teacher_id)
+
+            challenge = 1
+            if 'challenge' in teacher:
+                challenge = teacher['challenge']['number']
+
+                # Inicia treinamento a partir do último
+                logging.info(f"Beleza porra, pegou o desafio: {challenge}")
+
+                # if challenge == 4:
+                #     # dispatcher.utter_message(
+                #     #     text=f"Você já finalizou o treinamento. Não se esqueça de responder o formulário: http://goo.gl/docs/123."
+                #     # )
+                #     logging.info(f"Done, vaze!")
+                #     return [SlotSet("done", True)]
+
+                desafios = collection.find_one({'challenge': challenge})
+
+                # Inicia treinamento a partir do último
+                logging.info(f"Desafios: {desafios}")
+
+            else:
+                desafios = collection.find_one({'challenge': challenge})
+
+                # Inicia treinamento a partir do último
+                logging.info(f"Desafios: {desafios}")
+        else:
+            # Inicia treinamento do 0
+            logging.info(f"Aí deu ruim")
+            dispatcher.utter_message(text=f"Aí deu ruim")
+
+        
+        return []  # Atualize os slots se necessário
+
+
+class ActionFinish(Action):
+    def name(self) -> Text:
+        return "action_finish"
+
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        dispatcher.utter_message(text="Você finalizou o treinamento, não se esqueça de responder o formulário que será enviado para você.")
+        return [UserUtteranceReverted()]

@@ -25,6 +25,13 @@ rules:
 
 - rule: Iniciar treinamento
   steps:
-    - intent: training
-    - action: action_training
+    - intent: before_training
+    - action: action_before_training
+
+- rule: Treinamento finalizado
+  condition:
+  - slot_was_set:
+    - done: true
+  steps:
+  - action: action_finish
 
