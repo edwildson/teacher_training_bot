@@ -134,6 +134,7 @@ nlu:
 - intent: training
   examples: |
     - iniciar desafios
+    - iniciar desafio
 
 - intent: inform_email
   examples: |
@@ -141,3 +142,8 @@ nlu:
     - O email para contato é [foo@bar.com](email)
     - [me@example.com](email)
     
+- intent: finish
+  examples: |
+    - done
+    - acabou
+    - finish

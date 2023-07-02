@@ -25,4 +25,7 @@ stories:
 
 - story: finish_training
   steps:
+  - intent: finish
+  - slot_was_set:
+    - done: true
   - action: action_finish

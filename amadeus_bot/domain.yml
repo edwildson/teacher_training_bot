@@ -15,6 +15,7 @@ intents:
   - before_training
   - training
   - inform_email
+  - finish
 
 actions:
   - action_get_email
@@ -49,7 +50,7 @@ slots:
     - type: custom
   done:
     type: bool
-    influence_conversation: false
+    influence_conversation: true
     mappings:
     - type: custom
   today:
@@ -88,6 +89,9 @@ responses:
 
   utter_finish:
   - text: "Você finalizou o treinamento, não se esqueça de responder o formulário que será enviado para você."
+
+  utter_nao_encontrado:
+  - text: "Este email \"{email}\" não foi encontrado."
 
 session_config:
   session_expiration_time: 60

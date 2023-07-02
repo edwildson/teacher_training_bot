@@ -16,6 +16,8 @@ rules:
   steps:
     - intent: confirm_email
     - action: action_check_email
+    - slot_was_set:
+      - teacher_name
     - action: action_start_training
 
 - rule: Desconfirma email
@@ -33,5 +35,6 @@ rules:
   - slot_was_set:
     - done: true
   steps:
+  - intent: finish
   - action: action_finish
 
