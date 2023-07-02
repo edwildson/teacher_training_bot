@@ -384,6 +384,7 @@ class ActionTraining(Action):
                         text=message["text"],
                         buttons=message["buttons"],
                         # image=message["image"],
+                        parse_mode='MarkdownV2',
                     )
 
                     challenge = next_question_number
@@ -406,6 +407,7 @@ class ActionTraining(Action):
                     text=message["text"],
                     buttons=message["buttons"],
                     # image=message["image"],
+                    parse_mode='MarkdownV2',
                 )
 
                 collection = db['teachers']
@@ -441,6 +443,7 @@ class ActionTraining(Action):
                     text=message["text"],
                     buttons=message["buttons"],
                     image=message["image"],
+                    parse_mode='MarkdownV2',
                 )
 
                 logging.info(f"Atualizando desafio do {teacher['email']}")

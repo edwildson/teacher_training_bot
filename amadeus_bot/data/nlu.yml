@@ -28,7 +28,6 @@ nlu:
     - bom dia
     - boa noite
     - boa tarde
-    - sair
 
 - intent: goodbye
   examples: |
@@ -44,6 +43,7 @@ nlu:
     - see you later
     - tchau
     - até mais
+    - sair
 
 - intent: affirm
   examples: |

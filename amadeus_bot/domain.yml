@@ -76,7 +76,7 @@ responses:
   - text: "Great, carry on!"
 
   utter_goodbye:
-  - text: "Bye"
+  - text: "Até mais"
 
   utter_iamabot:
   - text: "I am a bot, powered by Rasa."
