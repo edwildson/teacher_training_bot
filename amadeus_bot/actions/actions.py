@@ -4,6 +4,7 @@ from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.events import SlotSet, AllSlotsReset, UserUttered, FollowupAction
 import logging
 import math
+import time
 
 from pymongo import MongoClient
 from bson import ObjectId
@@ -276,6 +277,69 @@ class ActionTraining(Action):
     def name(self):
         return "action_training"
 
+    def save_training_time(self, teacher_id, challenge, question_number):
+        # logging.info(f"Capturando contexto de treinamento do professor ({teacher_id})")
+
+
+        # Crie uma conexão com o servidor MongoDB
+        client = MongoClient("mongodb://mongo")
+        
+        # Selecione um banco de dados
+        db = client['amadeus_bot']
+       
+        # Selecione uma coleção
+        collection = db['teachers']
+      
+        timestamp = datetime.utcnow()
+
+        documento_id = ObjectId(teacher_id)
+
+        teacher = collection.find_one({'_id': documento_id})
+
+        collection = db['challenges']
+               
+        desafios = collection.find_one({'challenge': math.floor(challenge)})
+
+        training_time = {
+            'challenge': math.floor(challenge),
+            'question_number': question_number,
+            'datetime': datetime.now().strftime("%H:%M:%S %m/%d/%Y"),
+            'teacher_id': documento_id,
+            'created_at': timestamp,
+        }
+
+        if challenge == desafios['last']:
+            training_time['last'] = True
+            collection = db['teachers']
+            collection.update_one(
+                {'email': f'{teacher["email"]}'}, # Critérios de pesquisa
+                {'$addToSet': {
+                    'training_time': training_time,
+                }, # Valores a serem atualizados
+                }
+            )
+        
+        elif question_number == 0:
+            training_time['first'] = True
+            collection = db['teachers']
+            collection.update_one(
+                {'email': f'{teacher["email"]}'}, # Critérios de pesquisa
+                {'$addToSet': {
+                    'training_time': training_time,
+                }, # Valores a serem atualizados
+                }
+            )
+
+        else:
+            collection = db['teachers']
+            collection.update_one(
+                {'email': f'{teacher["email"]}'}, # Critérios de pesquisa
+                {'$addToSet': {
+                    'training_time': training_time,
+                }, # Valores a serem atualizados
+                }
+            )
+
     def run(self, dispatcher: CollectingDispatcher,
             tracker: Tracker,
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
@@ -325,7 +389,7 @@ class ActionTraining(Action):
                 challenge = teacher['challenge']
                 collection = db['challenges']
                
-                desafios = collection.find_one({'challenge': math.floor(challenge)})
+                desafios = collection.find_one({'challenge': math.floor(float(challenge))})
 
                 logging.info(f"continuando treinamento")
 
@@ -370,45 +434,85 @@ class ActionTraining(Action):
 
                 logging.info(f"{question_number+1} desafio")
                 next_question_number = float(str(math.floor(challenge)) + "." + str(question_number+1))
+                logging.info(f"proximo desafio: {question_number+1}")
 
                 last_date = date.today().strftime('%d-%m-%Y') if next_question_number == desafios['last'] else None
                 
                 while desafios["questions"][question_number].get('is_info', False) is True:
                     message = {
-                        "text": f'{desafios["questions"][question_number]["question"]} \n{desafios["questions"][question_number]["tip"]} ',
+                        "text": f'{desafios["questions"][question_number]["question"]}',
+                        "tip": f'{desafios["questions"][question_number]["tip"]}',
                         "buttons":  None if desafios["questions"][question_number].get('is_info', False) is True else buttons,
                         "image": desafios["questions"][question_number].get("img_path", None),
                     }
 
                     dispatcher.utter_message(
                         text=message["text"],
-                        buttons=message["buttons"],
-                        # image=message["image"],
+                        buttons=None if message["tip"] else message["buttons"],
                         parse_mode='MarkdownV2',
                     )
+
+                    if message['tip']:
+                        dispatcher.utter_message(
+                            text=message["tip"],
+                            buttons=None if message["image"] else message["buttons"],
+                            parse_mode='MarkdownV2',
+                        )
+
+                    if message['image']:
+                        logging.info(f"Enviando a primeira foto")
+                        dispatcher.utter_message(
+                            image=message["image"][0],
+                        )
+                        logging.info(f"Enviando a segunda foto")
+                        dispatcher.utter_message(
+                            image=message["image"][1],
+                            buttons=message["buttons"],
+                        )
+
+                    self.save_training_time(teacher_id, challenge, question_number)
 
                     challenge = next_question_number
                     question_number = int(str(challenge)[2:])
 
                     logging.info(f"{question_number+1} desafio")
 
-                    next_question_number = float(str(math.floor(challenge)) + "." + str(question_number+1))
+                    next_question_number = str(str(math.floor(challenge)) + "." + str(question_number+1)) if question_number == 9 else float(str(math.floor(challenge)) + "." + str(question_number+1))
 
                     last_date = date.today().strftime('%d-%m-%Y') if next_question_number == desafios['last'] else None
 
                 logging.info(f"saiu do while")
                 message = {
-                    "text": f'{desafios["questions"][question_number]["question"]} \n{desafios["questions"][question_number]["tip"]} ',
+                    "text": f'{desafios["questions"][question_number]["question"]}',
+                    "tip": f'{desafios["questions"][question_number]["tip"]}',
                     "buttons":  None if desafios["questions"][question_number].get('is_info', False) is True else buttons,
                     "image": desafios["questions"][question_number].get("img_path", None),
                 }
 
                 dispatcher.utter_message(
                     text=message["text"],
-                    buttons=message["buttons"],
-                    # image=message["image"],
+                    buttons=None if message["tip"] else message["buttons"],
                     parse_mode='MarkdownV2',
                 )
+
+                if message['tip']:
+                    dispatcher.utter_message(
+                        text=message["tip"],
+                        buttons=None if message["image"] else message["buttons"],
+                        parse_mode='MarkdownV2',
+                    )
+                if message['image']:
+                    logging.info(f"Enviando a primeira foto")
+                    dispatcher.utter_message(
+                        image=message["image"][0],
+                    )
+                    logging.info(f"Enviando a segunda foto")
+                    dispatcher.utter_message(
+                        image=message["image"][1],
+                        buttons=message["buttons"],
+                    )
+                
+                self.save_training_time(teacher_id, challenge, question_number)
 
                 collection = db['teachers']
                 collection.update_one(
@@ -434,19 +538,38 @@ class ActionTraining(Action):
                 ]
 
                 message = {
-                    "text": f'{desafios["questions"][0]["question"]} \n{desafios["questions"][0]["tip"]} ',
+                    "text": f'{desafios["questions"][0]["question"]}',
+                    "tip": f'{desafios["questions"][0]["tip"]}',
                     "buttons":  buttons if {desafios["questions"][0].get('is_info', False)} else None,
                     "image": desafios["questions"][0].get("img_path", None),
                 }
                 
                 dispatcher.utter_message(
                     text=message["text"],
-                    buttons=message["buttons"],
-                    image=message["image"],
+                    buttons=None if message["tip"] else message["buttons"],
                     parse_mode='MarkdownV2',
                 )
 
+                if message['tip']:
+                    dispatcher.utter_message(
+                        text=message["tip"],
+                        buttons=None if message["image"] else message["buttons"],
+                        parse_mode='MarkdownV2',
+                    )
+                if message['image']:
+                    logging.info(f"Enviando a primeira foto")
+                    dispatcher.utter_message(
+                        image=message["image"][0],
+                    )
+                    logging.info(f"Enviando a segunda foto")
+                    dispatcher.utter_message(
+                        image=message["image"][1],
+                        buttons=message["buttons"],
+                    )
+
                 logging.info(f"Atualizando desafio do {teacher['email']}")
+
+                self.save_training_time(teacher_id, challenge, 0)
 
                 collection = db['teachers']
                 collection.update_one(
