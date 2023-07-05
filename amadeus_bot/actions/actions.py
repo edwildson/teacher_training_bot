@@ -302,10 +302,10 @@ class ActionTraining(Action):
 
         collection = db['challenges']
                
-        desafios = collection.find_one({'challenge': math.floor(challenge)})
+        desafios = collection.find_one({'challenge': math.floor(float(challenge))})
 
         training_time = {
-            'challenge': math.floor(challenge),
+            'challenge': math.floor(float(challenge)),
             'question_number': question_number+1,
             'datetime': datetime.now().strftime("%H:%M:%S %m/%d/%Y"),
             'teacher_id': documento_id,
@@ -340,6 +340,16 @@ class ActionTraining(Action):
                 {'email': f'{teacher["email"]}'}, # Critérios de pesquisa
                 {'$addToSet': {
                     'training_time': training_time,
+                }, # Valores a serem atualizados
+                }
+            )
+
+        if challenge == 3.12:
+            collection = db['teachers']
+            collection.update_one(
+                {'email': f'{teacher["email"]}'}, # Critérios de pesquisa
+                {'$set': {
+                    'done': True,
                 }, # Valores a serem atualizados
                 }
             )
@@ -391,7 +401,7 @@ class ActionTraining(Action):
                 challenge = teacher['challenge']
                 collection = db['challenges']
                
-                desafios = collection.find_one({'challenge': math.floor(float(challenge))})
+                desafios = collection.find_one({'challenge': int(math.floor(float(challenge)))})
 
                 logging.info(f"continuando treinamento")
 
@@ -434,13 +444,13 @@ class ActionTraining(Action):
 
                 question_number = int(str(challenge)[2:])
 
-                logging.info(f"{question_number+1} desafio")
-                next_question_number = float(str(math.floor(challenge)) + "." + str(question_number+1))
-                logging.info(f"proximo desafio: {question_number+1}")
+                logging.info(f"{question_number} desafio")
+                next_question_number = str(str(math.floor(float(challenge))) + "." + str(question_number+1)) if question_number == 9 else float(str(math.floor(float(challenge))) + "." + str(question_number+1))
+                logging.info(f"proximo desafio: {next_question_number}")
 
                 last_date = date.today().strftime('%d-%m-%Y') if next_question_number == desafios['last'] else None
                 
-                while desafios["questions"][question_number].get('is_info', False) is True:
+                while question_number < int(str(desafios['last'])[2:]) and desafios["questions"][question_number].get('is_info', False) is True:
                     message = {
                         "text": f'{desafios["questions"][question_number]["question"]}',
                         "tip": f'{desafios["questions"][question_number]["tip"]}',
@@ -488,51 +498,53 @@ class ActionTraining(Action):
                     last_date = date.today().strftime('%d-%m-%Y') if next_question_number == desafios['last'] else None
 
                 logging.info(f"saiu do while")
-                message = {
-                    "text": f'{desafios["questions"][question_number]["question"]}',
-                    "tip": f'{desafios["questions"][question_number]["tip"]}',
-                    "buttons":  None if desafios["questions"][question_number].get('is_info', False) is True else buttons,
-                    "image": desafios["questions"][question_number].get("img_path", None),
-                }
 
-                dispatcher.utter_message(
-                    text=message["text"],
-                    buttons=None if message["tip"] else message["buttons"],
-                    parse_mode='MarkdownV2',
-                )
+                if question_number < int(str(desafios['last'])[2:]):
+                    message = {
+                        "text": f'{desafios["questions"][question_number]["question"]}',
+                        "tip": f'{desafios["questions"][question_number]["tip"]}',
+                        "buttons":  None if desafios["questions"][question_number].get('is_info', False) is True else buttons,
+                        "image": desafios["questions"][question_number].get("img_path", None),
+                    }
 
-                if message['tip']:
                     dispatcher.utter_message(
-                        text=message["tip"],
-                        buttons=None if message["image"] else message["buttons"],
+                        text=message["text"],
+                        buttons=None if message["tip"] else message["buttons"],
                         parse_mode='MarkdownV2',
                     )
-                if message['image']:
-                    logging.info(f"{message['image'][0]} e {message['image'][1]}")
-                    dispatcher.utter_message(
-                        image=message["image"][0],
-                    )
+
+                    if message['tip']:
+                        dispatcher.utter_message(
+                            text=message["tip"],
+                            buttons=None if message["image"] else message["buttons"],
+                            parse_mode='MarkdownV2',
+                        )
+                    if message['image']:
+                        logging.info(f"{message['image'][0]} e {message['image'][1]}")
+                        dispatcher.utter_message(
+                            image=message["image"][0],
+                        )
+                        
+                        dispatcher.utter_message(
+                            image=message["image"][1],
+                        )
+
+                        dispatcher.utter_message(
+                            text="Para prosseguir, clique em feito",
+                            buttons=message["buttons"],
+                        )
                     
-                    dispatcher.utter_message(
-                        image=message["image"][1],
-                    )
+                    self.save_training_time(teacher_id, challenge, question_number)
 
-                    dispatcher.utter_message(
-                        text="Para prosseguir, clique em feito",
-                        buttons=message["buttons"],
+                    collection = db['teachers']
+                    collection.update_one(
+                        {'email': f'{teacher["email"]}'}, # Critérios de pesquisa
+                        {'$set': {
+                            'challenge': next_question_number,
+                            'last_quest_date': last_date,
+                            'updated_at': timestamp}, 
+                        }, # Valores a serem atualizados
                     )
-                
-                self.save_training_time(teacher_id, challenge, question_number)
-
-                collection = db['teachers']
-                collection.update_one(
-                    {'email': f'{teacher["email"]}'}, # Critérios de pesquisa
-                    {'$set': {
-                        'challenge': next_question_number,
-                        'last_quest_date': last_date,
-                        'updated_at': timestamp}, 
-                    }, # Valores a serem atualizados
-                )
 
             else:
                 logging.info(f"Primeiro desafio desafio")
@@ -640,7 +652,7 @@ class ActionHelpChallenge(Action):
 
             logging.info(f"Challenge era: {challenge}")
 
-            previous_question_number = str(str(math.floor(challenge)) + "." + str(question_number-1)) if question_number == 11 else float(str(math.floor(challenge)) + "." + str(question_number-1))
+            previous_question_number = str(str(math.floor(float(challenge))) + "." + str(question_number-1)) if question_number == 11 else float(str(math.floor(challenge)) + "." + str(question_number-1))
 
             logging.info(f"Virou: {previous_question_number}")
 
