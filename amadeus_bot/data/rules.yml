@@ -38,3 +38,9 @@ rules:
   - intent: finish
   - action: action_finish
 
+
+- rule: Ajuda
+  steps:
+    - intent: help
+    - action: action_help_challenge
+

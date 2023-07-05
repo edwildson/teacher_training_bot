@@ -16,6 +16,7 @@ intents:
   - training
   - inform_email
   - finish
+  - help
 
 actions:
   - action_get_email
@@ -26,6 +27,7 @@ actions:
   - action_before_training
   - action_training
   - action_finish
+  - action_help_challenge
 
 forms:
   loop_collect_info:

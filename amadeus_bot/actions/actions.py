@@ -148,13 +148,17 @@ class ActionStartTraining(Action):
         db = client['amadeus_bot']
        
         # Selecione uma coleção
-        collection = db['training']
+        collection = db['teachers']
 
-        training = collection.find({'teacher_id': f'{teacher_id}'}).sort("_id", -1).limit(1)
+        documento_id = ObjectId(teacher_id)
 
-        logging.info(f"training: {training}")
+        teacher = collection.find_one({'_id': documento_id})
+
+        # training = collection.find({'teacher_id': f'{teacher_id}'}).sort("_id", -1).limit(1)
+
+        # logging.info(f"training: {training}")
         
-        if training.count() == 1:
+        if teacher.get('challenge', False):
             dispatcher.utter_message(text=f"Bem vindo novamente ao treinamento")
             
             buttons = [
@@ -302,7 +306,7 @@ class ActionTraining(Action):
 
         training_time = {
             'challenge': math.floor(challenge),
-            'question_number': question_number,
+            'question_number': question_number+1,
             'datetime': datetime.now().strftime("%H:%M:%S %m/%d/%Y"),
             'teacher_id': documento_id,
             'created_at': timestamp,
@@ -364,8 +368,6 @@ class ActionTraining(Action):
 
         teacher = collection.find_one({'_id': documento_id})
         
-        logging.info(teacher)
-
         if teacher is not None:
             # Selecione uma coleção
             collection = db['challenges']
@@ -400,7 +402,7 @@ class ActionTraining(Action):
 
                     if last_quest_date is None:
                         dispatcher.utter_message(
-                            text=f"Você já finalizou os desafios do dia de hoje, volte amanhã para novos desafios"
+                            text=f"Parabéns, você finalizou os desafios do dia de hoje, volte amanhã para novos desafios"
                         )
 
                         collection = db['teachers']
@@ -427,7 +429,7 @@ class ActionTraining(Action):
 
                 buttons = [
                     {"title": "Feito", "payload": "iniciar desafios"},
-                    {"title": "Ajuda", "payload": "sair"},
+                    {"title": "Ajuda", "payload": "ajuda"},
                 ]
 
                 question_number = int(str(challenge)[2:])
@@ -460,13 +462,17 @@ class ActionTraining(Action):
                         )
 
                     if message['image']:
-                        logging.info(f"Enviando a primeira foto")
+                        logging.info(f"{message['image'][0]} e {message['image'][1]}")
                         dispatcher.utter_message(
                             image=message["image"][0],
                         )
-                        logging.info(f"Enviando a segunda foto")
+                        
                         dispatcher.utter_message(
                             image=message["image"][1],
+                        )
+
+                        dispatcher.utter_message(
+                            text="Para prosseguir, clique em feito",
                             buttons=message["buttons"],
                         )
 
@@ -502,13 +508,17 @@ class ActionTraining(Action):
                         parse_mode='MarkdownV2',
                     )
                 if message['image']:
-                    logging.info(f"Enviando a primeira foto")
+                    logging.info(f"{message['image'][0]} e {message['image'][1]}")
                     dispatcher.utter_message(
                         image=message["image"][0],
                     )
-                    logging.info(f"Enviando a segunda foto")
+                    
                     dispatcher.utter_message(
                         image=message["image"][1],
+                    )
+
+                    dispatcher.utter_message(
+                        text="Para prosseguir, clique em feito",
                         buttons=message["buttons"],
                     )
                 
@@ -534,7 +544,7 @@ class ActionTraining(Action):
 
                 buttons = [
                     {"title": "Feito", "payload": "iniciar desafios"},
-                    {"title": "Ajuda", "payload": "sair"},
+                    {"title": "Ajuda", "payload": "ajuda"},
                 ]
 
                 message = {
@@ -557,17 +567,19 @@ class ActionTraining(Action):
                         parse_mode='MarkdownV2',
                     )
                 if message['image']:
-                    logging.info(f"Enviando a primeira foto")
                     dispatcher.utter_message(
                         image=message["image"][0],
                     )
-                    logging.info(f"Enviando a segunda foto")
+                    
                     dispatcher.utter_message(
                         image=message["image"][1],
+                    )
+
+                    dispatcher.utter_message(
+                        text="Para prosseguir, clique em feito",
                         buttons=message["buttons"],
                     )
 
-                logging.info(f"Atualizando desafio do {teacher['email']}")
 
                 self.save_training_time(teacher_id, challenge, 0)
 
@@ -593,3 +605,70 @@ class ActionFinish(Action):
         logging.info(f"Você finalizou o treinamento, não se esqueça de responder o formulário que será enviado para você.")
         dispatcher.utter_message(text="Você finalizou o treinamento, não se esqueça de responder o formulário que será enviado para você.")
         return [UserUtteranceReverted()]
+
+class ActionHelpChallenge(Action):
+    def name(self) -> Text:
+        return "action_help_challenge"
+
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        teacher_id = tracker.get_slot("teacher_id")
+
+        # logging.info(f"Capturando contexto de treinamento do professor ({teacher_id})")
+
+
+        # Crie uma conexão com o servidor MongoDB
+        client = MongoClient("mongodb://mongo")
+        
+        # Selecione um banco de dados
+        db = client['amadeus_bot']
+       
+        # Selecione uma coleção
+        collection = db['teachers']
+      
+        timestamp = datetime.utcnow()
+
+        documento_id = ObjectId(teacher_id)
+
+        teacher = collection.find_one({'_id': documento_id})
+
+        logging.info(f"Teacher: {teacher}")
+        
+        if teacher is not None:
+            # Selecione uma coleção
+            challenge = teacher.get('challenge', None)
+            question_number = int(str(challenge)[2:])
+
+            logging.info(f"Challenge era: {challenge}")
+
+            previous_question_number = str(str(math.floor(challenge)) + "." + str(question_number-1)) if question_number == 11 else float(str(math.floor(challenge)) + "." + str(question_number-1))
+
+            logging.info(f"Virou: {previous_question_number}")
+
+            collection.update_one(
+                {'email': f'{teacher["email"]}'}, # Critérios de pesquisa
+                {'$set': {
+                    'challenge': previous_question_number,
+                    'last_quest_date': None,
+                    'updated_at': timestamp}, 
+                }, # Valores a serem atualizados
+            )
+
+            buttons = [
+                {"title": "Voltar aos desafios", "payload": "iniciar desafios"},
+                {"title": "Sair", "payload": "sair"},
+            ]
+
+            message = {
+                "text": f'Para encontrar ajuda entre em contato com tutor virtual @Edwildson e ele responderá assim que possível. Você também pode acessar o canal de suporte do Amadeus para isso em: https://amadeuslms.cf/suporte',
+                "buttons":  buttons,
+            }
+            
+            dispatcher.utter_message(
+                text=message["text"],
+                buttons=message["buttons"],
+                parse_mode='MarkdownV2',
+            )
+
+        return []
+            
+        
