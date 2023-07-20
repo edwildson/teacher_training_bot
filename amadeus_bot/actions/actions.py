@@ -1,7 +1,7 @@
 from typing import Dict, Text, Any, List, Union
 from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
-from rasa_sdk.events import SlotSet, AllSlotsReset, UserUttered, FollowupAction
+from rasa_sdk.events import SlotSet, AllSlotsReset, UserUttered, FollowupAction, UserUtteranceReverted
 import logging
 import math
 import time
@@ -20,7 +20,7 @@ class ActionGetEmail(Action):
     def run(self, dispatcher: CollectingDispatcher,
             tracker: Tracker,
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
-        logging.info("informe seu email")
+        # logging.info("informe seu email")
         dispatcher.utter_message(text="Por favor, informe seu e-mail.")
 
         return [SlotSet("email", None)]
@@ -66,7 +66,7 @@ class ConfirmEmailAction(Action):
         return "action_email_confirmation"
 
     def run(self, dispatcher, tracker, domain):
-        logging.info("Confirmando email")
+        # logging.info("Confirmando email")
         message = tracker.latest_message.get('text')
         email = str(re.findall(r'\S+@\S+', message)[0]).lower()
 
@@ -93,7 +93,7 @@ class ActionCheckEmail(Action):
         self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]
     ) -> List[Dict[Text, Any]]:
         email = tracker.get_slot("email")
-        logging.info(f"checando email... ({email})")
+        # logging.info(f"checando email... ({email})")
 
         print("Criando conexão")
         # Crie uma conexão com o servidor MongoDB
@@ -115,17 +115,17 @@ class ActionCheckEmail(Action):
 
         teacher = collection.find_one({'email': f'{email}'})
 
-        logging.info(teacher)
+        # logging.info(teacher)
 
         if teacher:
-            logging.info('encontrou')
+            # logging.info('encontrou')
             dispatcher.utter_message(text=f"Olá, {teacher['name']}")
             return [
                 SlotSet("teacher_name", teacher['name']),
                 SlotSet("teacher_id", str(teacher['_id'])),
             ]
         else:
-            logging.info('não encontrou')
+            # logging.info('não encontrou')
             dispatcher.utter_message(response="utter_nao_encontrado")
 
             restart_action = [FollowupAction(name='action_restart')]
@@ -138,7 +138,7 @@ class ActionStartTraining(Action):
 
     def run(self, dispatcher, tracker, domain):
         teacher_id = tracker.get_slot("teacher_id")
-        logging.info(f"Iniciando treinamento ({teacher_id})")
+        # logging.info(f"Iniciando treinamento ({teacher_id})")
         
 
         # Crie uma conexão com o servidor MongoDB
@@ -214,7 +214,7 @@ class ActionBeforeTraining(Action):
 
         teacher_id = tracker.get_slot("teacher_id")
 
-        logging.info(f"Capturando contexto de treinamento do professor ({teacher_id})")
+        # logging.info(f"Capturando contexto de treinamento do professor ({teacher_id})")
 
 
         # Crie uma conexão com o servidor MongoDB
@@ -232,17 +232,17 @@ class ActionBeforeTraining(Action):
 
         teacher = collection.find_one({'_id': documento_id})
         
-        logging.info(teacher)
+        # logging.info(teacher)
 
         if teacher is not None:
             if 'done' in teacher:
                 done = teacher['done']
 
-                logging.info(f"Done: {done}")
+                # logging.info(f"Done: {done}")
 
                 if done is True:
                     dispatcher.utter_message(
-                        text=f"Você já finalizou o treinamento. Não se esqueça de responder o formulário: http://goo.gl/docs/123."
+                        text=f"Você já finalizou o treinamento. Não se esqueça de responder o formulário: https://forms.gle/NuhrxgSvy6DfFDcRA"
                     )
                     return [SlotSet("done", True)]
             elif 'last_quest_date' in teacher:
@@ -250,9 +250,9 @@ class ActionBeforeTraining(Action):
 
                 if last_quest_date == date.today().strftime('%d-%m-%Y'):
                     dispatcher.utter_message(
-                        text=f"Você já finalizou os desafios do dia de hoje, volte amanhã para novos desafios"
+                        text=f"Você finalizou os desafios do dia de hoje, volte amanhã para novos desafios"
                     )
-                    return [SlotSet("today", True)]
+                    return [UserUtteranceReverted(), SlotSet("today", True)]
                 
             buttons = [
                 {"title": "Sim", "payload": "iniciar desafios"},
@@ -271,7 +271,7 @@ class ActionBeforeTraining(Action):
             # dispatcher.utter_message(text=f"Beleza porra, não tem desafio")
         else:
             # Inicia treinamento do 0
-            logging.info(f"Aí deu ruim")
+            # logging.info(f"Aí deu ruim")
             dispatcher.utter_message(text=f"Aí deu ruim")
 
         
@@ -385,17 +385,17 @@ class ActionTraining(Action):
             documento_id = ObjectId(teacher_id)
             challenge = 1
 
-            logging.info(f"...")
+            # logging.info(f"...")
 
             if 'last_quest_date' in teacher:
                 last_quest_date = teacher['last_quest_date']
                 
                 if last_quest_date == date.today().strftime('%d-%m-%Y'):
                     dispatcher.utter_message(
-                        text=f"Você já finalizou os desafios do dia de hoje, volte amanhã para novos desafios"
+                        text=f"Você finalizou os desafios do dia de hoje, volte amanhã para novos desafios"
                     )
 
-                    return [SlotSet("today", True)]
+                    return [UserUtteranceReverted(), SlotSet("today", True)]
 
             if 'challenge' in teacher:
                 challenge = teacher['challenge']
@@ -403,12 +403,12 @@ class ActionTraining(Action):
                
                 desafios = collection.find_one({'challenge': int(math.floor(float(challenge)))})
 
-                logging.info(f"continuando treinamento")
+                # logging.info(f"continuando treinamento")
 
                 if challenge == desafios['last']:
                     last_quest_date = teacher.get('last_quest_date', None)
 
-                    logging.info(f"chegou ao final de um desafio")
+                    # logging.info(f"chegou ao final de um desafio")
 
                     if last_quest_date is None:
                         dispatcher.utter_message(
@@ -421,14 +421,14 @@ class ActionTraining(Action):
                             {'$set': {'last_quest_date': date.today().strftime('%d-%m-%Y'), 'updated_at': timestamp}, }, # Valores a serem atualizados
                         )
 
-                        return [SlotSet("today", True)]
+                        return [UserUtteranceReverted(), SlotSet("today", True)]
                     else:
-                        logging.info(f"iniciando próximo desafio")
+                        # logging.info(f"iniciando próximo desafio")
                         challenge = float(str(math.floor(challenge)+1) + "." + "0")
                         desafios = collection.find_one({'challenge': math.floor(challenge)})
                 
                 # Inicia treinamento a partir do último
-                logging.info(f"Beleza, pegou o desafio: {challenge}")
+                # logging.info(f"Beleza, pegou o desafio: {challenge}")
 
                 # if challenge == 4:
                 #     # dispatcher.utter_message(
@@ -444,9 +444,9 @@ class ActionTraining(Action):
 
                 question_number = int(str(challenge)[2:])
 
-                logging.info(f"{question_number} desafio")
+                # logging.info(f"{question_number} desafio")
                 next_question_number = str(str(math.floor(float(challenge))) + "." + str(question_number+1)) if question_number == 9 else float(str(math.floor(float(challenge))) + "." + str(question_number+1))
-                logging.info(f"proximo desafio: {next_question_number}")
+                # logging.info(f"proximo desafio: {next_question_number}")
 
                 last_date = date.today().strftime('%d-%m-%Y') if next_question_number == desafios['last'] else None
                 
@@ -472,7 +472,7 @@ class ActionTraining(Action):
                         )
 
                     if message['image']:
-                        logging.info(f"{message['image'][0]} e {message['image'][1]}")
+                        # logging.info(f"{message['image'][0]} e {message['image'][1]}")
                         dispatcher.utter_message(
                             image=message["image"][0],
                         )
@@ -491,13 +491,13 @@ class ActionTraining(Action):
                     challenge = next_question_number
                     question_number = int(str(challenge)[2:])
 
-                    logging.info(f"{question_number+1} desafio")
+                    # logging.info(f"{question_number+1} desafio")
 
                     next_question_number = str(str(math.floor(challenge)) + "." + str(question_number+1)) if question_number == 9 else float(str(math.floor(challenge)) + "." + str(question_number+1))
 
                     last_date = date.today().strftime('%d-%m-%Y') if next_question_number == desafios['last'] else None
 
-                logging.info(f"saiu do while")
+                # logging.info(f"saiu do while")
 
                 if question_number < int(str(desafios['last'])[2:]):
                     message = {
@@ -520,7 +520,7 @@ class ActionTraining(Action):
                             parse_mode='MarkdownV2',
                         )
                     if message['image']:
-                        logging.info(f"{message['image'][0]} e {message['image'][1]}")
+                        # logging.info(f"{message['image'][0]} e {message['image'][1]}")
                         dispatcher.utter_message(
                             image=message["image"][0],
                         )
@@ -547,12 +547,12 @@ class ActionTraining(Action):
                     )
 
             else:
-                logging.info(f"Primeiro desafio desafio")
+                # logging.info(f"Primeiro desafio desafio")
                 collection = db['challenges']
                 desafios = collection.find_one({'challenge': challenge})
 
                 # Inicia treinamento a partir do último
-                logging.info(f"Desafios: {desafios}")
+                # logging.info(f"Desafios: {desafios}")
 
                 buttons = [
                     {"title": "Feito", "payload": "iniciar desafios"},
@@ -602,7 +602,7 @@ class ActionTraining(Action):
                 )
         else:
             # Inicia treinamento do 0
-            logging.info(f"Aí deu ruim")
+            # logging.info(f"Aí deu ruim")
             dispatcher.utter_message(text=f"Aí deu ruim")
 
         
@@ -614,8 +614,8 @@ class ActionFinish(Action):
         return "action_finish"
 
     def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
-        logging.info(f"Você finalizou o treinamento, não se esqueça de responder o formulário que será enviado para você.")
-        dispatcher.utter_message(text="Você finalizou o treinamento, não se esqueça de responder o formulário que será enviado para você.")
+        # logging.info(f"Você finalizou o treinamento, não se esqueça de responder o formulário: ")
+        dispatcher.utter_message(text="Você finalizou o treinamento, não se esqueça de responder o formulário: https://forms.gle/NuhrxgSvy6DfFDcRA")
         return [UserUtteranceReverted()]
 
 class ActionHelpChallenge(Action):
@@ -643,18 +643,18 @@ class ActionHelpChallenge(Action):
 
         teacher = collection.find_one({'_id': documento_id})
 
-        logging.info(f"Teacher: {teacher}")
+        # logging.info(f"Teacher: {teacher}")
         
         if teacher is not None:
             # Selecione uma coleção
             challenge = teacher.get('challenge', None)
             question_number = int(str(challenge)[2:])
 
-            logging.info(f"Challenge era: {challenge}")
+            # logging.info(f"Challenge era: {challenge}")
 
             previous_question_number = str(str(math.floor(float(challenge))) + "." + str(question_number-1)) if question_number == 11 else float(str(math.floor(challenge)) + "." + str(question_number-1))
 
-            logging.info(f"Virou: {previous_question_number}")
+            # logging.info(f"Virou: {previous_question_number}")
 
             collection.update_one(
                 {'email': f'{teacher["email"]}'}, # Critérios de pesquisa
@@ -671,7 +671,7 @@ class ActionHelpChallenge(Action):
             ]
 
             message = {
-                "text": f'Para encontrar ajuda entre em contato com tutor virtual @Edwildson e ele responderá assim que possível. Você também pode acessar o canal de suporte do Amadeus para isso em: https://amadeuslms.cf/suporte',
+                "text": f'Para encontrar ajuda acesse nosso grupo no telegram https://t.me/+bEPqOh8lzitiNWNh ou entre em contato com o tutor virtual @Edwildson e ele responderá assim que possível.',
                 "buttons":  buttons,
             }
             
