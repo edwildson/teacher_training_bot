@@ -41,6 +41,9 @@ nlu:
     - see you around
     - bye bye
     - see you later
+    - tchau
+    - até mais
+    - sair
 
 - intent: affirm
   examples: |
@@ -115,15 +118,37 @@ nlu:
 
 - intent: confirm_email
   examples: |
-    - sim
-    - correto
-    - sim, este é meu email
     - este é meu email
+    - sim, este é meu email
 
 - intent: unconfirm_email
   examples: |
-    - não
-    - errado
-    - não, este não é meu email
     - este não é meu email
+    - não, este não é meu email
+
+- intent: before_training
+  examples: |
+    - continuar treinamento
+    - iniciar treinamento
+
+- intent: training
+  examples: |
+    - iniciar desafios
+    - iniciar desafio
+
+- intent: inform_email
+  examples: |
+    - Meu email é [johndoe@example.com](email)
+    - O email para contato é [foo@bar.com](email)
+    - [me@example.com](email)
     
+- intent: finish
+  examples: |
+    - done
+    - acabou
+    - finish
+
+- intent: help
+  examples: |
+    - ajuda
+    - help

@@ -14,7 +14,7 @@ services:
       - .env
     depends_on:
       - mongo
-    command: rasa run --log-file storage/logs/rasa-api.log
+    command: rasa run --debug --log-file storage/logs/rasa-api.log
 
   rasa-actions:
     image: rasa-image
@@ -26,7 +26,7 @@ services:
       - .env
     depends_on:
       - rasa-bot
-    command: bash -c 'rasa run actions -v >> storage/logs/rasa-actions.log'
+    command: bash -c 'rasa run actions --debug -v >> storage/logs/rasa-actions.log'
 
   mongo:
     image: mongo:4.4.13-focal

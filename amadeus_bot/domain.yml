@@ -10,12 +10,29 @@ intents:
   - bot_challenge
   - utter_email
   - inform
+  - confirm_email
   - unconfirm_email
+  - before_training
+  - training
+  - inform_email
+  - finish
+  - help
 
 actions:
   - action_get_email
   - action_save_email
-  - confirm_email
+  - action_email_confirmation
+  - action_check_email
+  - action_start_training
+  - action_before_training
+  - action_training
+  - action_finish
+  - action_help_challenge
+
+forms:
+  loop_collect_info:
+    required_slots:
+      - today
 
 slots:
   email:
@@ -23,6 +40,28 @@ slots:
     influence_conversation: false
     mappings:
     - type: custom
+  teacher_name:
+    type: text
+    influence_conversation: false
+    mappings:
+    - type: custom
+  teacher_id:
+    type: text
+    influence_conversation: false
+    mappings:
+    - type: custom
+  done:
+    type: bool
+    influence_conversation: true
+    mappings:
+    - type: custom
+  today:
+    type: bool
+    influence_conversation: true
+    mappings:
+    - type: custom
+      conditions:
+          - active_loop: loop_collect_info
 
 responses:
   utter_greet:
@@ -39,7 +78,7 @@ responses:
   - text: "Great, carry on!"
 
   utter_goodbye:
-  - text: "Bye"
+  - text: "Até mais"
 
   utter_iamabot:
   - text: "I am a bot, powered by Rasa."
@@ -49,6 +88,12 @@ responses:
 
   utter_email:
   - text: "O seu email é {email}."
+
+  utter_finish:
+  - text: "Você finalizou o treinamento, não se esqueça de responder o formulário que será enviado para você."
+
+  utter_nao_encontrado:
+  - text: "Este email \"{email}\" não foi encontrado."
 
 session_config:
   session_expiration_time: 60
